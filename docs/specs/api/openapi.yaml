@@ -1,0 +1,1954 @@
+openapi: 3.1.0
+info:
+  title: ShiftPatch API
+  version: 1.0.0
+  description: |
+    Implementation-facing REST contract for the ShiftPatch MVP.
+    All role and Facility checks are enforced server-side. Datetimes are RFC 3339;
+    Credential expiry values are dates interpreted through the end of that date in
+    the Facility's IANA time zone.
+servers:
+  - url: /api/v1
+tags:
+  - name: Authentication
+  - name: Facilities
+  - name: Credentials
+  - name: Nurses
+  - name: Shifts
+  - name: Timesheets
+  - name: Dashboards
+  - name: Audit
+  - name: Exports
+security:
+  - cookieAuth: []
+paths:
+  /auth/nurses/register:
+    post:
+      tags: [Authentication]
+      operationId: registerNurse
+      summary: Self-register a Nurse account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterNurseRequest'
+      responses:
+        '201':
+          description: Nurse registered; verification is required before application access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /auth/login:
+    post:
+      tags: [Authentication]
+      operationId: login
+      summary: Create an authenticated session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated session and CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      operationId: logout
+      summary: End the authenticated session
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '204':
+          description: Session ended
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/me:
+    get:
+      tags: [Authentication]
+      operationId: getSession
+      summary: Get the current user and CSRF token
+      responses:
+        '200':
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/verify-email:
+    post:
+      tags: [Authentication]
+      operationId: verifyEmail
+      summary: Verify an email address with a single-use token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  minLength: 1
+      responses:
+        '200':
+          description: Verified user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+  /auth/resend-verification:
+    post:
+      tags: [Authentication]
+      operationId: resendVerification
+      summary: Request another verification email without revealing account existence
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedMessage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+  /auth/password-reset-requests:
+    post:
+      tags: [Authentication]
+      operationId: requestPasswordReset
+      summary: Request a password reset without revealing account existence
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedMessage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+  /auth/password-reset-confirmations:
+    post:
+      tags: [Authentication]
+      operationId: confirmPasswordReset
+      summary: Reset a password with a single-use token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '200':
+          description: Password reset succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+  /auth/invitations/accept:
+    post:
+      tags: [Authentication]
+      operationId: acceptFacilityManagerInvitation
+      summary: Accept a Facility Manager invitation and create a session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitationRequest'
+      responses:
+        '200':
+          description: Invitation accepted and session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /facilities:
+    get:
+      tags: [Facilities]
+      operationId: listFacilities
+      summary: List basic Facility information within the caller's permitted scope
+      description: Nurses receive basic Facility data needed for Open Shift discovery. Facility Managers receive only their own Facility.
+      responses:
+        '200':
+          description: Facilities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Facility'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Facilities]
+      operationId: createFacility
+      summary: Create a Facility
+      description: Admin only.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityInput'
+      responses:
+        '201':
+          description: Facility created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /facilities/{facilityId}:
+    get:
+      tags: [Facilities]
+      operationId: getFacility
+      summary: Get Facility information
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+      responses:
+        '200':
+          description: Facility
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Facilities]
+      operationId: updateFacility
+      summary: Update a Facility's name
+      description: Admin only. Jurisdiction and time zone are immutable after Facility creation.
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityUpdateRequest'
+      responses:
+        '200':
+          description: Facility updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /facilities/{facilityId}/manager-invitations:
+    post:
+      tags: [Facilities]
+      operationId: inviteFacilityManager
+      summary: Invite a Facility Manager
+      description: Admin only. The response never includes the invitation token.
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          description: Invitation created and email queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerInvitation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /facilities/{facilityId}/inspector-exports:
+    post:
+      tags: [Exports]
+      operationId: createInspectorExport
+      summary: Generate the Facility's Inspector Export
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '201':
+          description: Export stored privately with a short-lived download
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectorExport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /facilities/{facilityId}/nurses:
+    get:
+      tags: [Facilities, Nurses]
+      operationId: listAssociatedNurses
+      summary: List Nurses associated with a Facility
+      description: Facility Managers see their Facility; Admins may select any Facility. Association begins with a successful claim and remains after Withdrawal or Cancellation.
+      parameters:
+        - $ref: '#/components/parameters/FacilityId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Associated Nurses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssociatedNursePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /credentials/me:
+    get:
+      tags: [Credentials]
+      operationId: getMyCredentials
+      summary: Get the Nurse's current and historical Credentials
+      responses:
+        '200':
+          description: Credential bundle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialBundle'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /credentials/me/nursing-license:
+    put:
+      tags: [Credentials]
+      operationId: replaceMyNursingLicense
+      summary: Upload or replace the current Nursing License
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NursingLicenseInput'
+            encoding:
+              document:
+                contentType: application/pdf, image/jpeg, image/png
+      responses:
+        '200':
+          description: Replacement result, including automatically affected future Shifts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialReplacementResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /credentials/me/tb-test:
+    put:
+      tags: [Credentials]
+      operationId: replaceMyTbTestResult
+      summary: Upload or replace the current TB Test Result
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TbTestInput'
+            encoding:
+              document:
+                contentType: application/pdf, image/jpeg, image/png
+      responses:
+        '200':
+          description: Replacement result, including automatically affected future Shifts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialReplacementResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /credentials/{credentialId}/download:
+    get:
+      tags: [Credentials]
+      operationId: getCredentialDownload
+      summary: Authorize a short-lived Credential document download
+      parameters:
+        - $ref: '#/components/parameters/CredentialId'
+      responses:
+        '200':
+          description: Short-lived download
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadLink'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /nurses/me/shifts:
+    get:
+      tags: [Nurses, Shifts]
+      operationId: listMyNurseShifts
+      summary: List the authenticated Nurse's privacy-preserving claim history
+      parameters:
+        - name: outcome
+          in: query
+          schema:
+            $ref: '#/components/schemas/MyClaimOutcome'
+        - name: startFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: startTo
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Nurse's own claim projection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyShiftPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /nurses/{nurseId}:
+    get:
+      tags: [Nurses]
+      operationId: getNurseProfile
+      summary: Get an authorized Nurse profile
+      parameters:
+        - $ref: '#/components/parameters/NurseId'
+      responses:
+        '200':
+          description: Nurse profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NurseProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /nurses/{nurseId}/credentials:
+    get:
+      tags: [Nurses, Credentials]
+      operationId: getNurseCredentials
+      summary: Get current and historical Credentials for self or an associated Nurse
+      parameters:
+        - $ref: '#/components/parameters/NurseId'
+      responses:
+        '200':
+          description: Credential bundle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialBundle'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /shifts:
+    get:
+      tags: [Shifts]
+      operationId: listShifts
+      summary: List role-scoped Shifts
+      description: |
+        Nurses receive Open Shifts only and can inspect their own eligibility.
+        Facility Managers receive their Facility's Shifts; Admins receive all Shifts.
+        Results are sorted by soonest start.
+      parameters:
+        - name: status
+          in: query
+          description: Operational roles may filter by status; Nurses may use only OPEN.
+          schema:
+            $ref: '#/components/schemas/ShiftStatus'
+        - name: facilityId
+          in: query
+          description: Admins may select any Facility; other roles cannot escape their permitted scope.
+          schema:
+            type: string
+            format: uuid
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+        - name: startFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: startTo
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Role-scoped Shift page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Shifts]
+      operationId: createShift
+      summary: Publish an Open Shift
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftInput'
+      responses:
+        '201':
+          description: Shift published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /shifts/{shiftId}:
+    get:
+      tags: [Shifts]
+      operationId: getShift
+      summary: Get an authorized Shift
+      parameters:
+        - $ref: '#/components/parameters/ShiftId'
+      responses:
+        '200':
+          description: Shift
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Shifts]
+      operationId: updateOpenShift
+      summary: Edit an Open Shift
+      parameters:
+        - $ref: '#/components/parameters/ShiftId'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftUpdateInput'
+      responses:
+        '200':
+          description: Updated Open Shift
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /shifts/{shiftId}/claim:
+    post:
+      tags: [Shifts]
+      operationId: claimShift
+      summary: Atomically claim an Open Shift
+      parameters:
+        - $ref: '#/components/parameters/ShiftId'
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: Shift claimed by the authenticated Nurse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /shifts/{shiftId}/withdraw:
+    post:
+      tags: [Shifts]
+      operationId: withdrawShift
+      summary: Withdraw the authenticated Nurse before the Shift starts
+      parameters:
+        - $ref: '#/components/parameters/ShiftId'
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: Reopened Shift
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /shifts/{shiftId}/cancel:
+    post:
+      tags: [Shifts]
+      operationId: cancelShift
+      summary: Cancel an Open or Filled Shift before it starts
+      parameters:
+        - $ref: '#/components/parameters/ShiftId'
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: Cancelled Shift
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /shifts/{shiftId}/no-show:
+    post:
+      tags: [Shifts]
+      operationId: recordNoShow
+      summary: Record a No-show at or after the Shift start
+      parameters:
+        - $ref: '#/components/parameters/ShiftId'
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: No-show Shift
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /timesheets:
+    get:
+      tags: [Timesheets]
+      operationId: listTimesheets
+      summary: List the role-scoped Timesheet queue
+      description: |
+        Nurses receive their own queue, Facility Managers their Facility's queue,
+        and Admins the global queue. Ended Filled Shifts without a Timesheet appear
+        as AWAITING_SUBMISSION; Completed Shifts appear with their final Timesheet.
+      parameters:
+        - name: queueStatus
+          in: query
+          schema:
+            $ref: '#/components/schemas/TimesheetQueueStatus'
+        - name: facilityId
+          in: query
+          description: Admin-only Facility filter; Facility Managers are fixed to their Facility.
+          schema:
+            type: string
+            format: uuid
+        - name: startFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: startTo
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Role-scoped Timesheet queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimesheetPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /shifts/{shiftId}/timesheet:
+    get:
+      tags: [Timesheets]
+      operationId: getTimesheet
+      summary: Get the authorized Shift's Timesheet
+      parameters:
+        - $ref: '#/components/parameters/ShiftId'
+      responses:
+        '200':
+          description: Timesheet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Timesheet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Timesheets]
+      operationId: submitTimesheet
+      summary: Submit hours as the assigned Nurse or on their behalf
+      description: |
+        The assigned Nurse may create or replace the submission for their Shift
+        until final, including one initially submitted on their behalf. A Facility
+        Manager or Admin may create an on-behalf submission only when no submission
+        exists; otherwise they must finalize with corrected hours and a reason.
+      parameters:
+        - $ref: '#/components/parameters/ShiftId'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimesheetInput'
+      responses:
+        '200':
+          description: Submitted Timesheet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Timesheet'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /shifts/{shiftId}/timesheet/finalize:
+    post:
+      tags: [Timesheets]
+      operationId: finalizeTimesheet
+      summary: Finalize a Timesheet and complete the Shift
+      description: Changed hours require correctionReason. If no submission exists, actualHours is supplied through submitTimesheet before finalization.
+      parameters:
+        - $ref: '#/components/parameters/ShiftId'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimesheetFinalizationInput'
+      responses:
+        '200':
+          description: Final Timesheet; the Shift is now COMPLETED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Timesheet'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /dashboard/summary:
+    get:
+      tags: [Dashboards]
+      operationId: getDashboardSummary
+      summary: Get role-scoped operational counts and totals
+      description: Shift-based counts and totals use startDate and endDate. expiringCredentialCount always uses its independent rolling 30-day UTC window.
+      parameters:
+        - name: facilityId
+          in: query
+          description: Admin-only Facility filter; Facility Managers are always fixed to their Facility.
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          description: Inclusive calendar date interpreted in each Shift's Facility time zone
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: Inclusive calendar date interpreted in each Shift's Facility time zone
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /audit-logs:
+    get:
+      tags: [Audit]
+      operationId: listAuditLogs
+      summary: List global or Facility-scoped Audit Log entries
+      parameters:
+        - name: facilityId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: actorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: action
+          in: query
+          schema:
+            $ref: '#/components/schemas/AuditAction'
+        - name: resourceType
+          in: query
+          schema:
+            $ref: '#/components/schemas/AuditResourceType'
+        - name: resourceId
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Audit entries in reverse chronological order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: shiftpatch_session
+      description: HttpOnly authenticated session cookie. Unsafe authenticated requests also require X-CSRF-Token.
+  parameters:
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    FacilityId:
+      name: facilityId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CredentialId:
+      name: credentialId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NurseId:
+      name: nurseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ShiftId:
+      name: shiftId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+  responses:
+    AcceptedMessage:
+      description: Generic accepted response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Message'
+    ValidationError:
+      description: Invalid input; code is VALIDATION_ERROR or a field-specific validation code
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Authenticated but unverified, ineligible, or not permitted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found or not visible to the caller
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Current resource state conflicts with the requested operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Role:
+      type: string
+      enum: [ADMIN, FACILITY_MANAGER, NURSE]
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, role, fullName, email, emailVerified, facilityId, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/Role'
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        emailVerified:
+          type: boolean
+        facilityId:
+          type: [string, 'null']
+          format: uuid
+          description: Set only for Facility Managers
+        createdAt:
+          type: string
+          format: date-time
+    RegisterNurseRequest:
+      type: object
+      additionalProperties: false
+      required: [fullName, email, password]
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 12
+          maxLength: 200
+          writeOnly: true
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+    Session:
+      type: object
+      additionalProperties: false
+      required: [user, csrfToken, expiresAt]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        csrfToken:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    EmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    PasswordResetRequest:
+      type: object
+      additionalProperties: false
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          minLength: 12
+          maxLength: 200
+          writeOnly: true
+    AcceptInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [token, fullName, password]
+      properties:
+        token:
+          type: string
+          minLength: 1
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        password:
+          type: string
+          minLength: 12
+          maxLength: 200
+          writeOnly: true
+    Message:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+    FacilityInput:
+      type: object
+      additionalProperties: false
+      required: [name, jurisdiction, timeZone]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        jurisdiction:
+          type: string
+          minLength: 1
+          maxLength: 100
+        timeZone:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: IANA time-zone identifier
+    FacilityUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+    Facility:
+      type: object
+      additionalProperties: false
+      required: [id, name, jurisdiction, timeZone, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        jurisdiction:
+          type: string
+        timeZone:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    AssociatedNurse:
+      type: object
+      additionalProperties: false
+      required: [id, fullName, email]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+    AssociatedNursePage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssociatedNurse'
+        nextCursor:
+          type: [string, 'null']
+    ManagerInvitation:
+      type: object
+      additionalProperties: false
+      required: [id, facilityId, email, expiresAt, acceptedAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        expiresAt:
+          type: string
+          format: date-time
+        acceptedAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    ShiftStatus:
+      type: string
+      enum: [OPEN, FILLED, COMPLETED, CANCELLED, NO_SHOW]
+    EligibilityReason:
+      type: string
+      enum:
+        - MISSING_NURSING_LICENSE
+        - LICENSE_NOT_VALID_THROUGH_SHIFT_END
+        - LICENSE_JURISDICTION_MISMATCH
+        - MISSING_TB_TEST
+        - TB_TEST_NOT_NEGATIVE
+        - TB_TEST_NOT_VALID_THROUGH_SHIFT_END
+        - OVERLAPPING_SHIFT
+        - SHIFT_NOT_OPEN
+        - SHIFT_STARTED
+    Eligibility:
+      type: object
+      additionalProperties: false
+      required: [eligible, reasons]
+      properties:
+        eligible:
+          type: boolean
+        reasons:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/EligibilityReason'
+    Shift:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - facilityId
+        - facilityName
+        - jurisdiction
+        - timeZone
+        - startAt
+        - endAt
+        - status
+        - assignedNurseId
+        - assignedNurseName
+        - eligibility
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        facilityName:
+          type: string
+        jurisdiction:
+          type: string
+        timeZone:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/ShiftStatus'
+        assignedNurseId:
+          type: [string, 'null']
+          format: uuid
+          description: Visible only when the caller may see the assignment
+        assignedNurseName:
+          type: [string, 'null']
+          description: Visible only to the assigned Nurse and authorized operational roles
+        eligibility:
+          oneOf:
+            - $ref: '#/components/schemas/Eligibility'
+            - type: 'null'
+          description: Present for Nurse Open Shift responses; null for operational responses
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ShiftInput:
+      type: object
+      additionalProperties: false
+      required: [startAt, endAt]
+      properties:
+        facilityId:
+          type: [string, 'null']
+          format: uuid
+          description: Required for Admins; null or omitted value is resolved from a Facility Manager account
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+    ShiftUpdateInput:
+      type: object
+      additionalProperties: false
+      required: [startAt, endAt]
+      properties:
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+    ShiftList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Shift'
+    ShiftPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          $ref: '#/components/schemas/ShiftList'
+        nextCursor:
+          type: [string, 'null']
+    MyClaimOutcome:
+      type: string
+      enum: [ACTIVE, WITHDRAWN, CANCELLED, COMPLETED, NO_SHOW]
+    WithdrawalType:
+      type: string
+      enum: [MANUAL, AUTOMATIC]
+    MyShift:
+      type: object
+      additionalProperties: false
+      required:
+        - shiftId
+        - facilityId
+        - facilityName
+        - jurisdiction
+        - timeZone
+        - startAt
+        - endAt
+        - outcome
+        - withdrawalType
+        - withdrawalReasons
+        - withdrawnAt
+      properties:
+        shiftId:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        facilityName:
+          type: string
+        jurisdiction:
+          type: string
+        timeZone:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        outcome:
+          $ref: '#/components/schemas/MyClaimOutcome'
+        withdrawalType:
+          oneOf:
+            - $ref: '#/components/schemas/WithdrawalType'
+            - type: 'null'
+        withdrawalReasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/EligibilityReason'
+          description: Present only for automatic Withdrawal
+        withdrawnAt:
+          type: [string, 'null']
+          format: date-time
+    MyShiftPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyShift'
+        nextCursor:
+          type: [string, 'null']
+    CredentialType:
+      type: string
+      enum: [NURSING_LICENSE, TB_TEST_RESULT]
+    TbOutcome:
+      type: string
+      enum: [NEGATIVE, POSITIVE]
+    DocumentMetadata:
+      type: object
+      additionalProperties: false
+      required: [fileName, contentType, sizeBytes]
+      properties:
+        fileName:
+          type: string
+        contentType:
+          type: string
+          enum: [application/pdf, image/jpeg, image/png]
+        sizeBytes:
+          type: integer
+          minimum: 1
+    Credential:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - nurseId
+        - type
+        - isCurrent
+        - licenseNumber
+        - jurisdiction
+        - tbOutcome
+        - expiresOn
+        - document
+        - createdAt
+        - replacedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        nurseId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/CredentialType'
+        isCurrent:
+          type: boolean
+        licenseNumber:
+          type: [string, 'null']
+          description: Set only for Nursing Licenses
+        jurisdiction:
+          type: [string, 'null']
+          description: Set only for Nursing Licenses
+        tbOutcome:
+          oneOf:
+            - $ref: '#/components/schemas/TbOutcome'
+            - type: 'null'
+          description: Set only for TB Test Results
+        expiresOn:
+          type: string
+          format: date
+        document:
+          $ref: '#/components/schemas/DocumentMetadata'
+        createdAt:
+          type: string
+          format: date-time
+        replacedAt:
+          type: [string, 'null']
+          format: date-time
+    CredentialBundle:
+      type: object
+      additionalProperties: false
+      required: [nurseId, currentNursingLicense, currentTbTestResult, history]
+      properties:
+        nurseId:
+          type: string
+          format: uuid
+        currentNursingLicense:
+          oneOf:
+            - $ref: '#/components/schemas/Credential'
+            - type: 'null'
+        currentTbTestResult:
+          oneOf:
+            - $ref: '#/components/schemas/Credential'
+            - type: 'null'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/Credential'
+    NursingLicenseInput:
+      type: object
+      additionalProperties: false
+      required: [licenseNumber, jurisdiction, expiresOn, document]
+      properties:
+        licenseNumber:
+          type: string
+          minLength: 1
+          maxLength: 200
+        jurisdiction:
+          type: string
+          minLength: 1
+          maxLength: 100
+        expiresOn:
+          type: string
+          format: date
+        document:
+          type: string
+          format: binary
+    TbTestInput:
+      type: object
+      additionalProperties: false
+      required: [tbOutcome, expiresOn, document]
+      properties:
+        tbOutcome:
+          $ref: '#/components/schemas/TbOutcome'
+        expiresOn:
+          type: string
+          format: date
+        document:
+          type: string
+          format: binary
+    CredentialWithdrawalImpact:
+      type: object
+      additionalProperties: false
+      required: [shiftId, facilityId, facilityName, timeZone, startAt, endAt, withdrawnAt, reasons]
+      properties:
+        shiftId:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        facilityName:
+          type: string
+        timeZone:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        withdrawnAt:
+          type: string
+          format: date-time
+        reasons:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/EligibilityReason'
+    CredentialReplacementResult:
+      type: object
+      additionalProperties: false
+      required: [credential, affectedShifts]
+      properties:
+        credential:
+          $ref: '#/components/schemas/Credential'
+        affectedShifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CredentialWithdrawalImpact'
+          description: Future Shifts automatically withdrawn and reopened by this replacement
+    NurseProfile:
+      type: object
+      additionalProperties: false
+      required: [id, fullName, email, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+    TimesheetStatus:
+      type: string
+      enum: [SUBMITTED, FINAL]
+    SubmissionSource:
+      type: string
+      enum: [NURSE, FACILITY_MANAGER, ADMIN]
+    Timesheet:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - shiftId
+        - status
+        - actualHours
+        - note
+        - submittedBy
+        - submittedByName
+        - submissionSource
+        - submittedAt
+        - finalizedBy
+        - finalizedByName
+        - finalizedAt
+        - correctionReason
+      properties:
+        id:
+          type: string
+          format: uuid
+        shiftId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/TimesheetStatus'
+        actualHours:
+          type: number
+          exclusiveMinimum: 0
+        note:
+          type: [string, 'null']
+        submittedBy:
+          type: string
+          format: uuid
+        submittedByName:
+          type: string
+        submissionSource:
+          $ref: '#/components/schemas/SubmissionSource'
+        submittedAt:
+          type: string
+          format: date-time
+        finalizedBy:
+          type: [string, 'null']
+          format: uuid
+        finalizedByName:
+          type: [string, 'null']
+        finalizedAt:
+          type: [string, 'null']
+          format: date-time
+        correctionReason:
+          type: [string, 'null']
+    TimesheetQueueStatus:
+      type: string
+      enum: [AWAITING_SUBMISSION, AWAITING_FINALIZATION, FINAL]
+    TimesheetQueueItem:
+      type: object
+      additionalProperties: false
+      required: [shift, queueStatus, timesheet]
+      properties:
+        shift:
+          $ref: '#/components/schemas/Shift'
+        queueStatus:
+          $ref: '#/components/schemas/TimesheetQueueStatus'
+        timesheet:
+          oneOf:
+            - $ref: '#/components/schemas/Timesheet'
+            - type: 'null'
+    TimesheetPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimesheetQueueItem'
+        nextCursor:
+          type: [string, 'null']
+    TimesheetInput:
+      type: object
+      additionalProperties: false
+      required: [actualHours]
+      properties:
+        actualHours:
+          type: number
+          exclusiveMinimum: 0
+        note:
+          type: [string, 'null']
+          maxLength: 2000
+    TimesheetFinalizationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        actualHours:
+          type: number
+          exclusiveMinimum: 0
+          description: Omit to approve submitted hours; supply a changed value to correct them
+        correctionReason:
+          type: [string, 'null']
+          maxLength: 2000
+          description: Required whenever actualHours changes the submitted value
+    DownloadLink:
+      type: object
+      additionalProperties: false
+      required: [url, expiresAt]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Short-lived signed URL; must not be logged or sent to analytics
+        expiresAt:
+          type: string
+          format: date-time
+    InspectorExport:
+      type: object
+      additionalProperties: false
+      required: [id, facilityId, nurseCount, createdAt, download]
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        nurseCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        download:
+          $ref: '#/components/schemas/DownloadLink'
+    DashboardSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - shiftsByStatus
+        - manualWithdrawalCount
+        - automaticWithdrawalCount
+        - noShowCount
+        - actualHours
+        - pendingTimesheetCount
+        - expiringCredentialCount
+        - generatedAt
+      properties:
+        shiftsByStatus:
+          type: object
+          additionalProperties: false
+          required: [OPEN, FILLED, COMPLETED, CANCELLED, NO_SHOW]
+          properties:
+            OPEN:
+              type: integer
+              minimum: 0
+            FILLED:
+              type: integer
+              minimum: 0
+            COMPLETED:
+              type: integer
+              minimum: 0
+            CANCELLED:
+              type: integer
+              minimum: 0
+            NO_SHOW:
+              type: integer
+              minimum: 0
+        manualWithdrawalCount:
+          type: integer
+          minimum: 0
+        automaticWithdrawalCount:
+          type: integer
+          minimum: 0
+        noShowCount:
+          type: integer
+          minimum: 0
+        actualHours:
+          type: number
+          minimum: 0
+          description: Sum of final Timesheets only; not exposed as a Nurse-wide comparison
+        pendingTimesheetCount:
+          type: integer
+          minimum: 0
+        expiringCredentialCount:
+          type: integer
+          minimum: 0
+          description: Independent of date filters; current Credentials expiring from the current UTC date through the next 30 days inclusive, scoped to a Nurse's own Credentials, a Facility Manager's Associated Nurses, or an Admin's selected Facility or all Facilities
+        generatedAt:
+          type: string
+          format: date-time
+    AuditAction:
+      type: string
+      enum:
+        - FACILITY_CREATED
+        - FACILITY_UPDATED
+        - MANAGER_INVITED
+        - MANAGER_INVITATION_ACCEPTED
+        - CREDENTIAL_CREATED
+        - CREDENTIAL_REPLACED
+        - SHIFT_CREATED
+        - SHIFT_UPDATED
+        - SHIFT_CLAIMED
+        - SHIFT_WITHDRAWN
+        - SHIFT_CANCELLED
+        - SHIFT_NO_SHOW
+        - TIMESHEET_SUBMITTED
+        - TIMESHEET_FINALIZED
+        - INSPECTOR_EXPORT_CREATED
+    AuditResourceType:
+      type: string
+      enum: [FACILITY, USER, MANAGER_INVITATION, CREDENTIAL, SHIFT, TIMESHEET, INSPECTOR_EXPORT]
+    AuditMetadata:
+      type: object
+      additionalProperties: false
+      properties:
+        withdrawalType:
+          oneOf:
+            - $ref: '#/components/schemas/WithdrawalType'
+            - type: 'null'
+          description: Present on Withdrawal entries; no Credential field values are stored
+    AuditEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - actorId
+        - actorName
+        - actorRole
+        - action
+        - resourceType
+        - resourceId
+        - facilityId
+        - reason
+        - metadata
+        - occurredAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        actorId:
+          type: [string, 'null']
+          format: uuid
+          description: Null for system actions such as automatic Withdrawal or reminders
+        actorName:
+          type: [string, 'null']
+          description: Null for system actions
+        actorRole:
+          oneOf:
+            - $ref: '#/components/schemas/Role'
+            - type: 'null'
+        action:
+          $ref: '#/components/schemas/AuditAction'
+        resourceType:
+          $ref: '#/components/schemas/AuditResourceType'
+        resourceId:
+          type: string
+        facilityId:
+          type: [string, 'null']
+          format: uuid
+        reason:
+          type: [string, 'null']
+        metadata:
+          $ref: '#/components/schemas/AuditMetadata'
+        occurredAt:
+          type: string
+          format: date-time
+    AuditPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEntry'
+        nextCursor:
+          type: [string, 'null']
+    ValidationIssue:
+      type: object
+      additionalProperties: false
+      required: [path, code, message]
+      properties:
+        path:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message, issues, requestId]
+      properties:
+        code:
+          type: string
+          description: |
+            Stable machine-readable code. Workflow codes include AUTHENTICATION_REQUIRED,
+            EMAIL_NOT_VERIFIED, ACCESS_DENIED, RESOURCE_NOT_FOUND, VALIDATION_ERROR,
+            CREDENTIAL_INELIGIBLE, SHIFT_NOT_OPEN, OVERLAPPING_SHIFT,
+            INVALID_SHIFT_STATE, SHIFT_ALREADY_STARTED, SHIFT_NOT_ENDED,
+            TIMESHEET_NOT_SUBMITTED, TIMESHEET_ALREADY_SUBMITTED,
+            TIMESHEET_ALREADY_FINAL, and CORRECTION_REASON_REQUIRED.
+        message:
+          type: string
+          description: Human-readable message without sensitive data
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationIssue'
+        requestId:
+          type: string

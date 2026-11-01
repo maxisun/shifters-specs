@@ -13,7 +13,7 @@
 
 ## Document and export storage
 
-- Store Credential document binaries and generated Inspector Exports in external private S3-compatible object storage.
+- Store Credential document binaries and generated Inspector Exports in a private Cloudflare R2 bucket through its S3-compatible API; local development uses MinIO with the same client.
 - PostgreSQL stores operational records and document metadata, not document binaries.
 - Encrypt documents in transit and at rest.
 - Require an authorized backend check for every download. Use either an authorized streaming response or a short-lived signed URL; never issue permanent public URLs.

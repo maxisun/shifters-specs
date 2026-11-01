@@ -10,6 +10,14 @@ Planning artifacts and implementation tickets live as Markdown files in `.scratc
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
 
+## Revisions
+
+- Ticket numbers are permanent. Never renumber or reuse one; new work takes the next free number.
+- A ticket carries a `Revision:` line starting at `1`. Any behavioural change increments it and appends a dated entry under a `## Revisions` heading in the same file.
+- Consumers work from a tag, not from a moving branch, and record the tag and commit alongside the contract version. Do not change the behaviour of a tagged ticket without bumping its revision and cutting a new tag.
+- Deferred decisions belong in the feature directory's README, not in conversation, so a later revision can pick them up.
+
+
 ## When a skill says "publish to the issue tracker"
 
 Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).

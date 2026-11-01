@@ -61,7 +61,7 @@ These are the only user roles. “Facility” replaces the original term “agen
 
 - PostHog analytics for major product actions with sensitive-data exclusions.
 - React web frontend, NestJS backend, TypeScript, PostgreSQL, REST, and polling.
-- External private S3-compatible document storage.
+- External private document storage in Cloudflare R2 (S3-compatible).
 - Local and sandbox/prod environments, with sandbox/prod deployed to a real HTTPS URL.
 - Responsive layouts with WCAG 2.2 AA as a design target.
 

@@ -1,6 +1,6 @@
 {
   "contractVersion": "1.0.0",
   "url": "https://github.com/maxisun/shifters-specs/releases/download/api-v1.0.0/shiftpatch-api-1.0.0.tar.gz",
-  "sha256": "d17060994607da4103b7bba8c75c51c9b143cd901fe4f2ed2298f0e9ca72cd78",
-  "sourceCommit": "65064a42d0c5e1f92767fcc933d5e7952ae69a84"
+  "sha256": "7066ab64dd8624afb9e89b27525d7279dc18dbb727e002afbf86bcdfa77fa8f6",
+  "sourceCommit": "8e2237be651a6d1a997f86a545bcb30a0b7f8154"
 }

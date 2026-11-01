@@ -1,7 +1,14 @@
 {
   "contractVersion": "1.0.0",
   "oasVersion": "3.1.0",
-  "sourceCommit": "65064a42d0c5e1f92767fcc933d5e7952ae69a84",
+  "sourceCommit": "8e2237be651a6d1a997f86a545bcb30a0b7f8154",
   "sourceFile": "docs/specs/api/openapi.yaml",
-  "releaseTag": "api-v1.0.0"
+  "releaseTag": "api-v1.0.0",
+  "workItems": [
+    {
+      "id": "shiftpatch-mvp/01",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/8e2237be651a6d1a997f86a545bcb30a0b7f8154/.scratch/shiftpatch-mvp/issues/01-contract-baseline-and-consumer-pin.md"
+    }
+  ]
 }

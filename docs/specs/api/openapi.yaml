@@ -15,7 +15,7 @@ tags:
   - name: Facilities
     description: Manage Facilities, Facility Manager invitations, Associated Nurses, and Inspector Exports.
   - name: Credentials
-    description: Read and replace Nurse qualification records and their documents.
+    description: Read and replace Nurse Credentials and their documents.
   - name: Nurses
     description: Read Nurse profiles and privacy-preserving claim histories.
   - name: Shifts

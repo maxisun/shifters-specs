@@ -58,7 +58,8 @@ generators are known to support a newer dialect.
 3. From the approved `main` commit, prepare
    `shiftpatch-api-X.Y.Z.tar.gz` containing the complete description bundle,
    `CHANGELOG.md`, and `manifest.json`. The manifest must contain
-   `contractVersion`, `oasVersion`, and the full 40-character `sourceCommit`.
+   `contractVersion`, `oasVersion`, and the full 40-character `sourceCommit`,
+   plus the accepted work-item IDs/revisions and their full-commit permalinks.
    Compute a SHA-256 checksum over the final archive and include the checksum
    sidecar as a release asset.
 4. Create a draft GitHub release tagged `api-vX.Y.Z` at that exact source

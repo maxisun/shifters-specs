@@ -11,14 +11,23 @@ servers:
   - url: /api/v1
 tags:
   - name: Authentication
+    description: Account registration, authentication, verification, recovery, and invitations.
   - name: Facilities
+    description: Manage Facilities, manager invitations, Facility Nurses, and Facility exports.
   - name: Credentials
+    description: Read and replace Nurse qualification records and their documents.
   - name: Nurses
+    description: Read Nurse profiles and privacy-preserving claim histories.
   - name: Shifts
+    description: Discover, publish, update, claim, and manage nursing Shifts.
   - name: Timesheets
+    description: Submit, review, and finalize Shift hours.
   - name: Dashboards
+    description: Read role-scoped operational summaries.
   - name: Audit
+    description: Search the append-only Audit Log.
   - name: Exports
+    description: Generate Facility Inspector Exports.
 security:
   - cookieAuth: []
 paths:

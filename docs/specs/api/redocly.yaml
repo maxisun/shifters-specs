@@ -1,0 +1,6 @@
+# The API contract is not separately licensed; do not imply a license by adding
+# an Info.license value solely to satisfy this optional style rule.
+extends:
+  - recommended
+rules:
+  info-license: off

@@ -1,7 +1,7 @@
 {
   "contractVersion": "1.0.0",
   "oasVersion": "3.1.0",
-  "sourceCommit": "9c736e2d31ecec7625c00e59f3392e3081c3f573",
+  "sourceCommit": "003204760601883a01de471e9e37bc2f0bdd9f2e",
   "sourceFile": "docs/specs/api/openapi.yaml",
   "releaseTag": "api-v1.0.0"
 }

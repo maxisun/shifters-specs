@@ -13,7 +13,7 @@ tags:
   - name: Authentication
     description: Account registration, authentication, verification, recovery, and invitations.
   - name: Facilities
-    description: Manage Facilities, manager invitations, Facility Nurses, and Facility exports.
+    description: Manage Facilities, manager invitations, Associated Nurses, and Facility exports.
   - name: Credentials
     description: Read and replace Nurse qualification records and their documents.
   - name: Nurses

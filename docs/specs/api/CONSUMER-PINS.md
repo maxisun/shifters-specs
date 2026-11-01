@@ -36,8 +36,8 @@ On Linux:
 sha256sum shiftpatch-api-1.0.0.tar.gz
 ```
 
-The reported digest must exactly match `sha256`. Also confirm that
-`manifest.json` inside the verified archive has the same `contractVersion`,
-`oasVersion`, and `sourceCommit` as the lock and release notes. Backend and
-frontend update their pins independently, but the version, URL, digest, and
-source commit must match byte-for-byte.
+The reported digest must exactly match `sha256`. In the verified archive,
+confirm that `manifest.json` has the same `contractVersion` and `sourceCommit`
+as the lock, and that its `oasVersion` matches the `openapi` value in the
+bundled `openapi.yaml`. Backend and frontend update their pins independently,
+but the version, URL, digest, and source commit must match byte-for-byte.

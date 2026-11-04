@@ -7,6 +7,9 @@ contract version, asset URL, archive digest, and the full specs source commit.
 Two shapes are accepted. They record the same pin; pick one per repository and
 do not mix them.
 
+For the ordered adoption sequence — verify, generate, compile, record — see
+`docs/guides/contract-consumption.md`.
+
 ## Shape 1 — package-manager dependency (TypeScript consumers)
 
 Add the release asset as an exact HTTPS tarball URL:

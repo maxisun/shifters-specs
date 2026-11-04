@@ -6,6 +6,8 @@
 
 **Blocked by:** 02 — Backend walking skeleton
 
+**Guide:** `docs/guides/contract-consumption.md`, frontend branch. Follow it before any other work.
+
 **Status:** ready-for-agent
 
 **Revision:** 1

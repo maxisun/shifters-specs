@@ -6,6 +6,8 @@
 
 **Blocked by:** 01 — Contract baseline and consumer pin
 
+**Guide:** `docs/guides/contract-consumption.md`, backend branch. Follow it before any other work.
+
 **Status:** ready-for-agent
 
 **Revision:** 1

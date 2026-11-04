@@ -7,13 +7,15 @@ on:
   pull_request:
     paths:
       - "docs/specs/api/**"
-      - "scripts/build-contract-release.mjs"
+      - "docs/guides/**"
+      - "scripts/**"
       - ".github/workflows/contract-*.yml"
   push:
     branches: [main]
     paths:
       - "docs/specs/api/**"
-      - "scripts/build-contract-release.mjs"
+      - "docs/guides/**"
+      - "scripts/**"
       - ".github/workflows/contract-*.yml"
 
 permissions:
@@ -46,6 +48,9 @@ jobs:
           npx --yes @redocly/cli@${REDOCLY_VERSION} lint
           --config docs/specs/api/redocly.yaml
           docs/specs/api/openapi.yaml
+
+      - name: Check release pins
+        run: node scripts/check-release-pins.mjs
 
       - name: Install oasdiff
         run: |
@@ -103,3 +108,27 @@ jobs:
           npm install --no-audit --no-fund "$RUNNER_TEMP"/release-check/*.tgz
           test -f node_modules/@maxisun/shiftpatch-api/openapi.yaml
           node -e "const m=require('./node_modules/@maxisun/shiftpatch-api/manifest.json'); if(!m.sourceCommit) process.exit(1)"
+
+  workflows:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: "1.7.12"
+        run: |
+          set -euo pipefail
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$archive"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" actionlint
+          sudo install -m 0755 "$RUNNER_TEMP/actionlint" /usr/local/bin/actionlint
+          actionlint --version
+
+      - name: Run actionlint
+        run: actionlint -color
+

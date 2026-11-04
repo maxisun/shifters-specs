@@ -7,18 +7,23 @@ immutable, SemVer-versioned release. Consumers never follow `main`.
 ## Continuous validation
 
 `.github/workflows/contract-validate.yml` runs on every pull request and on
-every push to `main` that touches `docs/specs/api/**`, the packager, or the
-contract workflows. It performs four checks:
+every push to `main` that touches `docs/specs/api/**`, `docs/guides/**`, the
+scripts, or the contract workflows. It performs five checks:
 
 1. **Lint** — Redocly CLI with the checked-in `redocly.yaml` ruleset.
-2. **Structure and references** — `oasdiff validate --fail-on WARN`.
-3. **Breaking changes** — `oasdiff breaking --fail-on WARN` against the
+2. **Pin consistency** — `scripts/check-release-pins.mjs` proves the sidecar,
+   the manifest, both sample locks, and the worked example in
+   `CONSUMER-PINS.md` all describe the same bytes.
+3. **Structure and references** — `oasdiff validate --fail-on WARN`.
+4. **Breaking changes** — `oasdiff breaking --fail-on WARN` against the
    `openapi.yaml` inside the most recent published release. Before the first
    release exists, the step records that the change establishes the baseline
    instead of failing.
-4. **Packager smoke test** — builds the release bundle in a temporary
+5. **Packager smoke test** — builds the release bundle in a temporary
    directory and installs it with npm, so a bundle that cannot be consumed
    cannot be merged.
+
+A second job, **Lint workflows**, runs `actionlint` over every workflow file.
 
 Nothing else in this repository is gated by CI.
 

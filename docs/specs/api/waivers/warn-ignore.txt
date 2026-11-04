@@ -1,0 +1,12 @@
+# oasdiff warning-level ignore patterns for the breaking-change gate.
+#
+# One regular expression per line. Blank lines and lines starting with # are
+# skipped. A matching finding of severity WARN is not treated as potentially
+# breaking.
+#
+# Adding a line here is a compatibility waiver. It MUST have a reviewed entry
+# under docs/specs/api/waivers/<target-version>.md that names the same finding,
+# the impact, and the migration plan. Reviewers see both files in the same
+# pull request; CI never suppresses a finding on its own.
+#
+# Leave this file empty until the first genuine waiver is approved.

@@ -1,0 +1,99 @@
+name: Contract validation
+
+# Runs on every change to the API description and on the tooling that guards
+# it. The ruleset and both CLIs are pinned; see docs/specs/api/RELEASING.md.
+
+on:
+  pull_request:
+    paths:
+      - "docs/specs/api/**"
+      - "scripts/build-contract-release.mjs"
+      - ".github/workflows/contract-*.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/specs/api/**"
+      - "scripts/build-contract-release.mjs"
+      - ".github/workflows/contract-*.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contract-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REDOCLY_VERSION: "2.72.1"
+  OASDIFF_VERSION: "1.35.0"
+
+jobs:
+  validate:
+    name: Validate and gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Lint the description
+        run: >
+          npx --yes @redocly/cli@${REDOCLY_VERSION} lint
+          --config docs/specs/api/redocly.yaml
+          docs/specs/api/openapi.yaml
+
+      - name: Install oasdiff
+        run: |
+          set -euo pipefail
+          archive="oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/$archive"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP"
+          sudo install -m 0755 "$RUNNER_TEMP/oasdiff" /usr/local/bin/oasdiff
+          oasdiff --version
+
+      - name: Validate structure and references
+        run: oasdiff validate --fail-on WARN docs/specs/api/openapi.yaml
+
+      # Compares against the most recent published contract. Before the first
+      # release exists there is nothing to compare against, so the run records
+      # that this change establishes the baseline instead of failing.
+      - name: Gate breaking changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          previous="$(gh release list -R "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName // empty')"
+          if [ -z "$previous" ]; then
+            echo "::notice title=Baseline::No published contract release exists yet; this change establishes the baseline."
+            exit 0
+          fi
+
+          mkdir -p "$RUNNER_TEMP/previous"
+          gh release download "$previous" -R "$GITHUB_REPOSITORY" \
+            --pattern '*.tgz' --dir "$RUNNER_TEMP/previous"
+          tar -xzf "$RUNNER_TEMP"/previous/*.tgz -C "$RUNNER_TEMP/previous"
+
+          oasdiff breaking --fail-on WARN \
+            --err-ignore docs/specs/api/waivers/err-ignore.txt \
+            --warn-ignore docs/specs/api/waivers/warn-ignore.txt \
+            "$RUNNER_TEMP/previous/package/openapi.yaml" \
+            docs/specs/api/openapi.yaml
+
+      - name: Smoke-test the release packager
+        run: node scripts/build-contract-release.mjs --out "$RUNNER_TEMP/release-check"
+
+      - name: Confirm the built asset installs as a package
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/consumer"
+          cd "$RUNNER_TEMP/consumer"
+          npm init --yes >/dev/null
+          npm install --no-audit --no-fund "$RUNNER_TEMP"/release-check/*.tgz
+          test -f node_modules/@maxisun/shiftpatch-api/openapi.yaml
+          node -e "const m=require('./node_modules/@maxisun/shiftpatch-api/manifest.json'); if(!m.sourceCommit) process.exit(1)"

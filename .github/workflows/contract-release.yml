@@ -1,0 +1,123 @@
+name: Contract release
+
+# Publishes the immutable contract release from protected main after the
+# `contract-release` environment approves it. The bundle itself is built and
+# committed by the maintainer with scripts/build-contract-release.mjs, so the
+# bytes that are reviewed in the pull request are the bytes that get published.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Contract version to release (must equal info.version)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: contract-release
+  cancel-in-progress: false
+
+env:
+  REDOCLY_VERSION: "2.72.1"
+  OASDIFF_VERSION: "1.35.0"
+
+jobs:
+  publish:
+    name: Publish api-v${{ inputs.version }}
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: contract-release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Lint the description
+        run: >
+          npx --yes @redocly/cli@${REDOCLY_VERSION} lint
+          --config docs/specs/api/redocly.yaml
+          docs/specs/api/openapi.yaml
+
+      - name: Install oasdiff
+        run: |
+          set -euo pipefail
+          archive="oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/$archive"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP"
+          sudo install -m 0755 "$RUNNER_TEMP/oasdiff" /usr/local/bin/oasdiff
+
+      - name: Validate structure and references
+        run: oasdiff validate --fail-on WARN docs/specs/api/openapi.yaml
+
+      - name: Verify the reviewed bundle
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          release_dir="docs/specs/api/releases/api-v${VERSION}"
+          test -f "$release_dir/shiftpatch-api-${VERSION}.tgz" || {
+            echo "::error::Missing bundle at $release_dir. Build it with scripts/build-contract-release.mjs and commit it first."
+            exit 1
+          }
+          cd "$release_dir"
+          sha256sum --check "shiftpatch-api-${VERSION}.tgz.sha256"
+
+      - name: Refuse to replace a published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "api-v${VERSION}" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::api-v${VERSION} already exists. Released contract versions are immutable; bump the version."
+            exit 1
+          fi
+          if git rev-parse --verify --quiet "refs/tags/api-v${VERSION}" >/dev/null; then
+            echo "::error::Tag api-v${VERSION} already exists; a tag without a release is ambiguous. Resolve it before retrying."
+            exit 1
+          fi
+
+      - name: Create the draft release with every asset attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          release_dir="docs/specs/api/releases/api-v${VERSION}"
+          gh release create "api-v${VERSION}" \
+            "$release_dir/shiftpatch-api-${VERSION}.tgz" \
+            "$release_dir/shiftpatch-api-${VERSION}.tgz.sha256" \
+            "$release_dir/manifest.json" \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "ShiftPatch API ${VERSION}" \
+            --notes-file docs/specs/api/CHANGELOG.md \
+            -R "$GITHUB_REPOSITORY"
+
+      - name: Publish the immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: gh release edit "api-v${VERSION}" --draft=false -R "$GITHUB_REPOSITORY"
+
+      - name: Verify the published assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          gh release verify "api-v${VERSION}" -R "$GITHUB_REPOSITORY"
+          gh release verify-asset "api-v${VERSION}" \
+            "docs/specs/api/releases/api-v${VERSION}/shiftpatch-api-${VERSION}.tgz" \
+            -R "$GITHUB_REPOSITORY"

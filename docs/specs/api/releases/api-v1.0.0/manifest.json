@@ -1,14 +1,144 @@
 {
   "contractVersion": "1.0.0",
   "oasVersion": "3.1.0",
-  "sourceCommit": "8e2237be651a6d1a997f86a545bcb30a0b7f8154",
+  "sourceCommit": "10135556394a5920f0ef0ebd40b9b25d19ee9e0e",
   "sourceFile": "docs/specs/api/openapi.yaml",
   "releaseTag": "api-v1.0.0",
   "workItems": [
     {
       "id": "shiftpatch-mvp/01",
       "revision": 1,
-      "url": "https://github.com/maxisun/shifters-specs/blob/8e2237be651a6d1a997f86a545bcb30a0b7f8154/.scratch/shiftpatch-mvp/issues/01-contract-baseline-and-consumer-pin.md"
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/01-contract-baseline-and-consumer-pin.md"
+    },
+    {
+      "id": "shiftpatch-mvp/02",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/02-backend-walking-skeleton.md"
+    },
+    {
+      "id": "shiftpatch-mvp/03",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/03-frontend-walking-skeleton.md"
+    },
+    {
+      "id": "shiftpatch-mvp/04",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/04-nurse-accounts-and-sessions.md"
+    },
+    {
+      "id": "shiftpatch-mvp/05",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/05-authentication-screens.md"
+    },
+    {
+      "id": "shiftpatch-mvp/06",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/06-facilities-and-manager-invitations.md"
+    },
+    {
+      "id": "shiftpatch-mvp/07",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/07-facility-admin-and-invitation-acceptance.md"
+    },
+    {
+      "id": "shiftpatch-mvp/08",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/08-credentials-and-document-access.md"
+    },
+    {
+      "id": "shiftpatch-mvp/09",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/09-nurse-credentials-screen.md"
+    },
+    {
+      "id": "shiftpatch-mvp/10",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/10-associated-nurses-directory.md"
+    },
+    {
+      "id": "shiftpatch-mvp/11",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/11-publish-and-edit-shifts.md"
+    },
+    {
+      "id": "shiftpatch-mvp/12",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/12-operational-shift-screens.md"
+    },
+    {
+      "id": "shiftpatch-mvp/13",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/13-nurse-discovery-and-eligibility.md"
+    },
+    {
+      "id": "shiftpatch-mvp/14",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/14-atomic-claim.md"
+    },
+    {
+      "id": "shiftpatch-mvp/15",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/15-nurse-discovery-and-claim-ui.md"
+    },
+    {
+      "id": "shiftpatch-mvp/16",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/16-withdrawal-cancellation-no-show.md"
+    },
+    {
+      "id": "shiftpatch-mvp/17",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/17-my-shifts-and-terminal-actions.md"
+    },
+    {
+      "id": "shiftpatch-mvp/18",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/18-timesheets-submit-and-finalize.md"
+    },
+    {
+      "id": "shiftpatch-mvp/19",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/19-timesheet-screens.md"
+    },
+    {
+      "id": "shiftpatch-mvp/20",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/20-dashboard-summary-and-reports.md"
+    },
+    {
+      "id": "shiftpatch-mvp/21",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/21-dashboard-and-reports-screens.md"
+    },
+    {
+      "id": "shiftpatch-mvp/22",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/22-audit-log-query.md"
+    },
+    {
+      "id": "shiftpatch-mvp/23",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/23-audit-log-screen.md"
+    },
+    {
+      "id": "shiftpatch-mvp/24",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/24-inspector-export-generation.md"
+    },
+    {
+      "id": "shiftpatch-mvp/25",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/25-inspector-export-action.md"
+    },
+    {
+      "id": "shiftpatch-mvp/26",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/26-credential-expiry-reminders.md"
+    },
+    {
+      "id": "shiftpatch-mvp/27",
+      "revision": 1,
+      "url": "https://github.com/maxisun/shifters-specs/blob/10135556394a5920f0ef0ebd40b9b25d19ee9e0e/.scratch/shiftpatch-mvp/issues/27-mvp-acceptance-run.md"
     }
   ]
 }

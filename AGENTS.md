@@ -20,6 +20,7 @@ Single-context layout: root `GLOSSARY.md` and `docs/adr/`. See `docs/agents/doma
 - **Consuming** it: `docs/specs/api/CONSUMER-PINS.md` for the pin format, `docs/guides/contract-consumption.md` for the ordered adoption sequence.
 - **Packaging** a release: `node scripts/build-contract-release.mjs --version X.Y.Z`.
 - **Checking** that every pin still agrees: `node scripts/check-release-pins.mjs`.
+- **Why** there are two pins and no submodule: `docs/adr/0006-cross-repo-artifact-consumption.md`.
 
 ### Toolchain
 

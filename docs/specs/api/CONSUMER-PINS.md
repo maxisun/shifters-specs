@@ -20,9 +20,11 @@ Add the release asset as an exact HTTPS tarball URL:
 ```
 
 Commit the package-manager lockfile. npm records `resolved` and `integrity`;
-pnpm records the URL `specifier` and `resolution.integrity`. Those two fields
-are the URL and the `sha256` in the explicit shape below, expressed in the
-consumer's own ecosystem.
+pnpm records the URL `specifier` and `resolution.integrity`. `resolved` and
+`specifier` are the URL in the explicit shape below. `integrity` is the digest
+of the same bytes, expressed as a Subresource Integrity string; npm and pnpm
+hash with SHA-512, while the `.sha256` sidecar uses SHA-256, so the two values
+differ in text but commit to identical bytes.
 
 Both package managers fail the install when the bytes behind the URL change,
 and `--frozen-lockfile` / `npm ci` fail when the lockfile is out of date. That
@@ -38,8 +40,8 @@ Read the manifest to confirm provenance before generating.
 {
   "contractVersion": "1.0.0",
   "url": "https://github.com/maxisun/shifters-specs/releases/download/api-v1.0.0/shiftpatch-api-1.0.0.tgz",
-  "sha256": "7066ab64dd8624afb9e89b27525d7279dc18dbb727e002afbf86bcdfa77fa8f6",
-  "sourceCommit": "8e2237be651a6d1a997f86a545bcb30a0b7f8154"
+  "sha256": "c4488a519ad42d6e52df15a51dfc159c8baf04ac0d099a68e51b5c254c52cc51",
+  "sourceCommit": "10135556394a5920f0ef0ebd40b9b25d19ee9e0e"
 }
 ```
 

@@ -68,7 +68,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          previous="$(gh release list -R "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName // empty')"
+          previous="$(
+            gh release list -R "$GITHUB_REPOSITORY" \
+              --exclude-drafts --limit 100 --json tagName \
+              --jq '[.[] | select(.tagName | startswith("api-v"))]
+                    | sort_by(.tagName | ltrimstr("api-v") | split(".") | map(tonumber))
+                    | last | .tagName // empty'
+          )"
           if [ -z "$previous" ]; then
             echo "::notice title=Baseline::No published contract release exists yet; this change establishes the baseline."
             exit 0

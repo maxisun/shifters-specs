@@ -4,6 +4,14 @@
 **Scope:** The three-repository ShiftPatch setup: `shifters-specs` (durable Markdown specifications, the 27 MVP tickets, and the hand-authored OpenAPI 3.1.0 contract), `shifters-be` (NestJS + pnpm, GitHub remote `maxisun/shifter-be`), and `shifters-fe` (Vite + React 19 + npm, not yet a Git repository). Covers transport, private-repository mechanics, the two artefact classes, frontend bootstrap order, generated-code policy, the concrete day-one flow for tickets 02 and 03, GitHub-native options, and risks.  
 **Terminology below:** “Sourced fact” describes what a standard, vendor, or tool documents or what the three repositories actually contain on 2026-11-03. “Recommendation” is the proposed ShiftPatch policy and its trade-offs. Where documentation is silent, that is stated explicitly rather than filled in.
 
+> **Post-implementation update (2026-11-03).** Ticket 01 implemented this
+> recommendation after the analysis below was written. The release bundle is now
+> an npm-pack tarball (`shiftpatch-api-1.0.0.tgz`) that installs as
+> `@maxisun/shiftpatch-api`, so §1's observation that the bundle is not an npm
+> package and §2.1's `ENOENT` reproduction describe the state before that
+> change. The analysis and the recommendation are unchanged; only those
+> observations are superseded.
+
 ## Executive recommendation
 
 **Recommendation:** keep the prior research’s model — an immutable, SemVer-versioned contract release plus a separate, commit-pinned work specification — but change the transport. Because both consumers are TypeScript and the specifications repository is **public**, publish the contract release asset as an **npm-installable tarball** and consume it as an **exact HTTPS tarball-URL dependency** in `package.json`. Let npm and pnpm record the URL and `integrity` in their committed lockfiles. Do **not** write a custom download/sync script for the public path, and do **not** create a GitHub Packages registry. The private-repository fallback in §3.2 is the exception, and it is a condition, not the default.

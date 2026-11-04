@@ -27,11 +27,19 @@ env:
 jobs:
   publish:
     name: Publish api-v${{ inputs.version }}
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: contract-release
     steps:
+      # A skipped job reports success, so refuse any non-main ref explicitly
+      # instead of guarding the whole job with `if:`.
+      - name: Require protected main
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Contract releases must run from refs/heads/main, got $GITHUB_REF."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
@@ -60,18 +68,58 @@ jobs:
       - name: Validate structure and references
         run: oasdiff validate --fail-on WARN docs/specs/api/openapi.yaml
 
+      - name: Check the requested version matches the description
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          declared="$(awk '/^info:/{found=1; next} found && /^  version:/{print $2; exit} found && /^[^[:space:]]/{exit}' docs/specs/api/openapi.yaml)"
+          if [ "$declared" != "$VERSION" ]; then
+            echo "::error::Workflow version '$VERSION' does not match info.version '$declared'."
+            exit 1
+          fi
+
+      # Verify the attestation tooling exists before publishing, because a
+      # failure afterwards would leave a release in place that cannot be
+      # repaired without a version bump.
+      - name: Pre-flight release verification tooling
+        run: gh release verify --help >/dev/null
+
       - name: Verify the reviewed bundle
         env:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           release_dir="docs/specs/api/releases/api-v${VERSION}"
-          test -f "$release_dir/shiftpatch-api-${VERSION}.tgz" || {
+          bundle="$release_dir/shiftpatch-api-${VERSION}.tgz"
+          test -f "$bundle" || {
             echo "::error::Missing bundle at $release_dir. Build it with scripts/build-contract-release.mjs and commit it first."
             exit 1
           }
+
           cd "$release_dir"
           sha256sum --check "shiftpatch-api-${VERSION}.tgz.sha256"
+          cd "$GITHUB_WORKSPACE"
+
+          mkdir -p "$RUNNER_TEMP/bundle"
+          tar -xzf "$bundle" -C "$RUNNER_TEMP/bundle"
+
+          # The released description must be byte-identical to the reviewed one.
+          cmp "$RUNNER_TEMP/bundle/package/openapi.yaml" docs/specs/api/openapi.yaml
+          cmp "$RUNNER_TEMP/bundle/package/manifest.json" "$release_dir/manifest.json"
+
+          source_commit="$(jq -r '.sourceCommit' "$release_dir/manifest.json")"
+          echo "$source_commit" | grep -Eq '^[0-9a-f]{40}$' || {
+            echo "::error::manifest.sourceCommit is not a full 40-character SHA."
+            exit 1
+          }
+          jq -e --arg v "$VERSION" '.contractVersion == $v' "$release_dir/manifest.json" >/dev/null
+          jq -e '.workItems | length > 0' "$release_dir/manifest.json" >/dev/null
+
+          # The description in the recorded commit must be the description being
+          # released, and that commit must be in this branch's history.
+          git merge-base --is-ancestor "$source_commit" "$GITHUB_SHA"
+          git show "$source_commit:docs/specs/api/openapi.yaml" | cmp - docs/specs/api/openapi.yaml
 
       - name: Refuse to replace a published release
         env:

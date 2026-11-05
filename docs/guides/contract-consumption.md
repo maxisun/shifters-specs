@@ -45,12 +45,12 @@ Create `contracts/work-spec.lock.json`:
 
 ```json
 {
-  "ticketSet": "tickets-mvp-v1.0.0",
+  "ticketSet": "tickets-mvp-v1.0.1",
   "commit": "<full 40-character SHA the tag points at>"
 }
 ```
 
-**Done when** `git ls-remote --tags https://github.com/maxisun/shifters-specs.git tickets-mvp-v1.0.0`
+**Done when** `git ls-remote --tags https://github.com/maxisun/shifters-specs.git tickets-mvp-v1.0.1`
 resolves the tag to that same commit.
 
 ### 3. Verify provenance before generating
@@ -115,7 +115,7 @@ Put this block in the pull request body:
 Work specification: <permalink to ticket 02 at its full commit>
 API contract: api-v1.0.0
 Contract source: <manifest.sourceCommit>
-Ticket set: tickets-mvp-v1.0.0 @ <full commit>
+Ticket set: tickets-mvp-v1.0.1 @ <full commit>
 Operations: <comma-separated operationIds this change touches>
 ```
 

@@ -52,7 +52,7 @@ jobs:
 
       - name: Lint the description
         run: >
-          npx --yes @redocly/cli@${REDOCLY_VERSION} lint
+          npx --yes "@redocly/cli@${REDOCLY_VERSION}" lint
           --config docs/specs/api/redocly.yaml
           docs/specs/api/openapi.yaml
 
